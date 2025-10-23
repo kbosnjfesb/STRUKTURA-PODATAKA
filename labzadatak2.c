@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Struktura za osobu (čvor liste)
 typedef struct person {
     char name[50];
     char surname[50];
@@ -10,11 +9,10 @@ typedef struct person {
     struct person* next;
 } Person;
 
-// Funkcija za unos nove osobe i vraća pokazivač na nju
+// Funkcija za unos nove osobe
 Person* createPerson() {
     Person* p = (Person*)malloc(sizeof(Person));
-    if (!p) return NULL;  // provjera alokacije memorije
-
+    if (!p) return NULL;  
     printf("Enter name: ");
     scanf(" %49s", p->name);
     printf("Enter surname: ");
@@ -55,7 +53,7 @@ void printList(Person* head) {
     }
 }
 
-// Traži osobu po prezimenu i vraća pokazivač na nju (ako postoji)
+// Traži osobu po prezimenu
 Person* findBySurname(Person* head, char* surname) {
     while (head) {
         if (strcmp(head->surname, surname) == 0) return head;
@@ -132,4 +130,5 @@ int main() {
     }
 
     return 0;
+
 }

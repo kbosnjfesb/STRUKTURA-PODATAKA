@@ -1,313 +1,361 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define NAMESIZE 50
+#define MAX_LINE 1024
+#define MAX_SIZE 50
+#define EXIT_SUCCESS 0
+#define FILE_ERROR_OPEN -1
+#define MALLOC_ERROR -2
+#define SCANF_ERROR -3
 
-typedef struct Person
-{
-    char name[NAMESIZE];
-    char surname[NAMESIZE];
-    int age;
-    struct Person* next;
+struct _person;
+typedef struct _person* Position;
+
+typedef struct _person {
+	char name[MAX_SIZE];
+	char surname[MAX_SIZE];
+	int birthYear;
+	Position next;
 } Person;
 
-int IspisClana(Person* head);
-int Ispisliste(Person* head);
-int UpisiUlistu(Person* head);
-Person* UnosElementa();
-Person* DodajNaPocetak(Person* head);
-Person* DodajNaKraj(Person* head);
-int PronadiPoPrezimenu(Person* head);
-Person* IzbrisiListu(Person* head);
-Person* DodajNakon(Person* head);
-Person* DodajIspred(Person* head);
-Person* UcitajizDatoteke(Person* head);
-int PocetniMenu();
+Position createPerson();
+int addToFrontOfTheList(Position);
+int addToEndOfTheList(Position);
+int printPerson(Position);
+int printList(Position);
+Position findPerson(Position, char*);
+int deletePerson(Position, char*);
+int deleteList(Position);
+int addAfter(Position, char*);
+int addBefore(Position, char*);
+int fileWrite(Position);
+int _fileRead();
+int fileRead(Position);
 
-int main()
+void main()
 {
-    int odabir = PocetniMenu();
-    Person* head = NULL;
+	char in = 0;
+	FILE* filePointer = NULL;
 
-    while (odabir >= 1 && odabir <= 9)
-    {
-        switch (odabir)
-        {
-        case 1: Ispisliste(head); break;
-        case 2: head = DodajNaPocetak(head); break;
-        case 3: head = DodajNaKraj(head); break;
-        case 4: PronadiPoPrezimenu(head); break;
-        case 5: head = IzbrisiListu(head); break;
-        case 6: head = DodajNakon(head); break;
-        case 7: head = DodajIspred(head); break;
-        case 8: UpisiUlistu(head); break;
-        case 9: head = UcitajizDatoteke(head); break;
-        default:
-            printf("Opcija nije u izboru.\n");
-            break;
-        }
+	char surname[MAX_SIZE];
+	Person head = { .next = NULL, .name = {0}, .surname = {0}, .birthYear = 0 };
+	Person headR = { .next = NULL, .name = {0}, .surname = {0}, .birthYear = 0 }; // for reading from file
 
-        printf("\nUnesite novi broj (1–9) ili neki drugi broj za izlaz:\n");
-        scanf("%d", &odabir);
-    }
+	printf("f - add person to front of the list\ne - add person to end of the list\na - add person after person with surname\nb - add person before person with surname\np - print list\ns - find person with surname\nd - delete person with surname\nw - write list into file\nr - read list from file\n");
 
-    return 0;
+	do
+	{
+		printf("\nChoose action: ");
+		if (scanf(" %c", &in) != 1) return SCANF_ERROR;
+
+		switch (in)
+		{
+			case 'f':
+				printf("Add to front of the list\n");
+				addToFrontOfTheList(&head);
+				break;
+			case 'e':
+				printf("Add to end of the list\n");
+				addToEndOfTheList(&head);
+				break;
+			case 'a':
+				printf("Add after person with surname: ");
+				if (scanf(" %s", surname) != 1) return SCANF_ERROR;
+				addAfter(&head, surname);
+				break;
+			case 'b':
+				printf("Add before person with surname: ");
+				if (scanf(" %s", surname) != 1) return SCANF_ERROR;
+				addBefore(&head, surname);
+				break;
+			case 'p':
+				printf("Printing list:\n");
+				printList(head.next);
+				break;
+			case 's':
+				printf("Find person with surname: ");
+				if (scanf(" %s", surname) != 1) return SCANF_ERROR;
+				findPerson(head.next, surname) ? 
+					printPerson(findPerson(head.next, surname)) : printf("\tPerson with surname '%s' was not found.\n", surname);
+				break;
+			case 'd':
+				printf("Delete person with surname: ");
+				if (scanf(" %s", surname) != 1) return SCANF_ERROR;
+				deletePerson(&head, surname);
+				break;
+			case 'w':
+				printf("Writing list into file...\n");
+				fileWrite(head.next);
+				break;
+			case 'r':
+				printf("Reading list from file:\n");
+				fileRead(&headR);
+				printList(headR.next);
+				break;
+			case '0':
+				// End program
+				break;
+			default:
+				printf("\tInvalid input. Try again.\n");
+				break;
+		}
+	} while (in != '0');
+
+	deleteList(&head);
+	deleteList(&headR);
+
+	return EXIT_SUCCESS;
 }
 
-int IspisClana(Person* head)
+Position createPerson()
 {
-    if (head == NULL)
-        return 0;
+	Position person = NULL;
+	person = (Position)malloc(sizeof(Person));
+	if (!person) return NULL;
 
-    printf("%s %s %d\n", head->name, head->surname, head->age);
-    return 1;
+	printf("\tName: ");
+	if (scanf(" %s", person->name) != 1) return SCANF_ERROR;
+
+	printf("\tSurname: ");
+	if (scanf(" %s", person->surname) != 1) return SCANF_ERROR;
+
+	printf("\tBirth year: ");
+	if (scanf(" %d", &person->birthYear) != 1) return SCANF_ERROR;
+
+	return person;
 }
 
-int Ispisliste(Person* head)
+int addToFrontOfTheList(Position head)
 {
-    if (head == NULL)
-    {
-        printf("Lista je prazna.\n");
-        return 0;
-    }
+	Position newPerson = NULL;
+	newPerson = createPerson();
+	if (!newPerson) {
+		printf("Malloc error!\n");
+		return MALLOC_ERROR;
+	}
 
-    while (head != NULL)
-    {
-        IspisClana(head);
-        head = head->next;
-    }
-    return 1;
+	newPerson->next = head->next;
+	head->next = newPerson;
+
+	return EXIT_SUCCESS;
 }
 
-int UpisiUlistu(Person* head)
+int addToEndOfTheList(Position head)
 {
-    FILE* FilePointer = fopen("popis.txt", "w");
-    if (FilePointer == NULL)
-    {
-        printf("Nije moguće otvoriti datoteku.\n");
-        return 0;
-    }
+	Position newPerson = NULL;
+	newPerson = createPerson();
+	if (!newPerson) {
+		printf("Malloc error!\n");
+		return MALLOC_ERROR;
+	}
 
-    while (head != NULL)
-    {
-        fprintf(FilePointer, "%s %s %d\n", head->name, head->surname, head->age);
-        head = head->next;
-    }
+	while (head->next != NULL)
+		head = head->next;
 
-    fclose(FilePointer);
-    printf("Upis obavljen.\n");
-    return 1;
+	newPerson->next = head->next;
+	head->next = newPerson;
+
+	return EXIT_SUCCESS;
 }
 
-Person* UnosElementa()
+int printPerson(Position person)
 {
-    Person* novaosoba = (Person*)malloc(sizeof(Person));
-    if (novaosoba == NULL)
-        return NULL;
-
-    printf("Unesi ime: ");
-    scanf("%s", novaosoba->name);
-    printf("Unesi prezime: ");
-    scanf("%s", novaosoba->surname);
-    printf("Unesi godine: ");
-    scanf("%d", &novaosoba->age);
-
-    novaosoba->next = NULL;
-    return novaosoba;
+	printf("\t%s %s, roden(a) %d. godine\n", person->name, person->surname, person->birthYear);
+	return EXIT_SUCCESS;
 }
 
-Person* DodajNaPocetak(Person* head)
+int printList(Position current)
 {
-    Person* novaosoba = UnosElementa();
-    if (novaosoba == NULL)
-        return head;
+	if (current == NULL)
+		printf("\tEmpty list!\n");
 
-    novaosoba->next = head;
-    return novaosoba;
+	while (current != NULL) {
+		printPerson(current);
+		current = current->next;
+	}
+	
+	return EXIT_SUCCESS;
 }
 
-Person* DodajNaKraj(Person* head)
+Position findPerson(Position current, char* sur)
 {
-    Person* novaosoba = UnosElementa();
-    if (novaosoba == NULL)
-        return head;
+	while (current != NULL && strcmp(current->surname, sur))
+		current = current->next;
 
-    if (head == NULL)
-        return novaosoba;
-
-    Person* current = head;
-    while (current->next != NULL)
-        current = current->next;
-
-    current->next = novaosoba;
-    return head;
+	return current;
 }
 
-int PronadiPoPrezimenu(Person* head)
+Position findPersonPrev(Position current, char* sur)
 {
-    char wantedSurname[NAMESIZE];
-    printf("Unesi prezime traženog člana: ");
-    scanf("%s", wantedSurname);
+	while (current->next != NULL && strcmp(current->next->surname, sur))
+		current = current->next;
 
-    while (head != NULL)
-    {
-        if (strcmp(wantedSurname, head->surname) == 0)
-        {
-            IspisClana(head);
-            return 1;
-        }
-        head = head->next;
-    }
+	if (current->next == NULL) return NULL;
 
-    printf("Član nije pronađen.\n");
-    return 0;
+	return current;
 }
 
-Person* IzbrisiListu(Person* head)
+int deletePerson(Position head, char* sur)
 {
-    while (head != NULL)
-    {
-        Person* temp = head;
-        head = head->next;
-        free(temp);
-    }
+	Position temp = NULL, prev = NULL;
 
-    printf("Lista izbrisana.\n");
-    return NULL;
+	prev = findPersonPrev(head, sur);
+
+	if (prev != NULL)
+	{
+		temp = prev->next;
+		prev->next = temp->next;
+		free(temp);
+
+		printf("\tPerson deleted.\n");
+	}
+	else printf("\tPerson with surname '%s' was not found.\n", sur);
+
+	return EXIT_SUCCESS;
 }
 
-Person* DodajNakon(Person* head)
+int deleteList(Position head)
 {
-    if (head == NULL)
-    {
-        printf("Lista je prazna.\n");
-        return head;
-    }
+	Position temp = NULL;
 
-    int pozicija;
-    printf("Nakon kojeg člana (broj rednog mjesta) želite dodati novi? ");
-    scanf("%d", &pozicija);
+	while (head->next != NULL)
+	{
+		temp = head->next;
+		head->next = head->next->next;
+		free(temp);
+	}
 
-    Person* novaosoba = UnosElementa();
-    if (novaosoba == NULL)
-        return head;
-
-    Person* current = head;
-    for (int i = 1; i < pozicija; i++)
-    {
-        if (current->next == NULL)
-        {
-            printf("Mjesto izvan dosega liste.\n");
-            free(novaosoba);
-            return head;
-        }
-        current = current->next;
-    }
-
-    novaosoba->next = current->next;
-    current->next = novaosoba;
-
-    return head;
+	return EXIT_SUCCESS;
 }
 
-Person* DodajIspred(Person* head)
+int addAfter(Position head, char* sur)
 {
-    if (head == NULL)
-    {
-        printf("Lista je prazna.\n");
-        return head;
-    }
+	Position newPerson = NULL, personWithSurname = NULL;
 
-    int pozicija;
-    printf("Prije kojeg člana želite dodati novog? ");
-    scanf("%d", &pozicija);
+	personWithSurname = findPerson(head, sur);
 
-    if (pozicija == 1)
-        return DodajNaPocetak(head);
+	if (personWithSurname != NULL)
+	{
+		newPerson = createPerson();
+		if (!newPerson) {
+			printf("Malloc error!\n");
+			return MALLOC_ERROR;
+		}
 
-    Person* novaosoba = UnosElementa();
-    if (novaosoba == NULL)
-        return head;
+		newPerson->next = personWithSurname->next;
+		personWithSurname->next = newPerson;
+	}
+	else printf("\tPerson with surname '%s' was not found.\n", sur);
 
-    Person* current = head;
-    for (int i = 1; i < pozicija - 1; i++)
-    {
-        if (current->next == NULL)
-        {
-            printf("Mjesto izvan dosega liste.\n");
-            free(novaosoba);
-            return head;
-        }
-        current = current->next;
-    }
-
-    novaosoba->next = current->next;
-    current->next = novaosoba;
-
-    return head;
+	return EXIT_SUCCESS;
 }
 
-Person* UcitajizDatoteke(Person* head)
+int addBefore(Position head, char* sur)
 {
-    FILE* FilePointer = fopen("popis.txt", "r");
-    if (FilePointer == NULL)
-    {
-        printf("Datoteka nije pronađena.\n");
-        return head;
-    }
+	Position newPerson = NULL, personBeforeSurname = NULL;
 
-    char name[NAMESIZE], surname[NAMESIZE];
-    int age;
-    Person* kraj = NULL;
+	personBeforeSurname = findPersonPrev(head, sur);
+	
+	if (personBeforeSurname != NULL)
+	{
+		newPerson = createPerson();
+		if (!newPerson) {
+			printf("Malloc error!\n");
+			return MALLOC_ERROR;
+		}
 
-    while (fscanf(FilePointer, "%s %s %d", name, surname, &age) == 3)
-    {
-        Person* novaosoba = (Person*)malloc(sizeof(Person));
-        if (novaosoba == NULL)
-        {
-            fclose(FilePointer);
-            return head;
-        }
-
-        strcpy(novaosoba->name, name);
-        strcpy(novaosoba->surname, surname);
-        novaosoba->age = age;
-        novaosoba->next = NULL;
-
-        if (head == NULL)
-        {
-            head = novaosoba;
-            kraj = novaosoba;
-        }
-        else
-        {
-            kraj->next = novaosoba;
-            kraj = novaosoba;
-        }
-    }
-
-    fclose(FilePointer);
-    printf("Učitavanje obavljeno.\n");
-    return head;
+		newPerson->next = personBeforeSurname->next;
+		personBeforeSurname->next = newPerson;
+	}
+	else printf("\tPerson with surname '%s' was not found.\n", sur);
+	
+	return EXIT_SUCCESS;
 }
 
-int PocetniMenu()
+// Write list content into file
+int fileWrite(Position current)
 {
-    int odabir;
-    printf("----- IZBORNIK -----\n");
-    printf("1. Ispisi listu\n");
-    printf("2. Dodaj na pocetak\n");
-    printf("3. Dodaj na kraj\n");
-    printf("4. Pronadi po prezimenu\n");
-    printf("5. Izbrisi listu\n");
-    printf("6. Dodaj nakon clana\n");
-    printf("7. Dodaj ispred clana\n");
-    printf("8. Upisi listu u datoteku\n");
-    printf("9. Ucitaj listu iz datoteke\n");
-    printf("--------------------\n");
-    printf("Odabir: ");
-    scanf("%d", &odabir);
-    return odabir;
+	FILE* filePointer = NULL;
+	filePointer = fopen("persons.txt", "w");
+
+	if (filePointer == NULL) {
+		printf("\nFile could not be opened.\n");
+		return FILE_ERROR_OPEN;
+	}
+
+	while (current != NULL) {
+		fprintf(filePointer, "%s %s %d\n", current->name, current->surname, current->birthYear);
+		current = current->next;
+	}
+
+	fclose(filePointer);
+
+	printf("\tSuccess!\n");
+
+	return EXIT_SUCCESS;
 }
 
+// Reads and prints file content
+int _fileRead()
+{
+	char c = 0;
+	FILE* fp = NULL;
+	fp = fopen("persons.txt", "r");
+
+	if (fp == NULL) {
+		printf("File could not be opened.\n");
+		return FILE_ERROR_OPEN;
+	}
+
+	c = getc(fp);
+	while (c != EOF) {
+		printf("%c", c);
+		c = getc(fp);
+	}
+		
+	fclose(fp);
+
+	return EXIT_SUCCESS;
+}
+
+// Reads and stores file content into list
+int fileRead(Position head)
+{
+	FILE* filePointer = NULL;
+	filePointer = fopen("persons.txt", "r");
+
+	if (!filePointer) {
+		printf("File could not be opened.\n");
+		return FILE_ERROR_OPEN;
+	}
+
+
+	Position prev = NULL, current = NULL;
+
+	deleteList(head); // so repeated reading won't append file content to previous content
+	prev = head;
+
+	while (!feof(filePointer))
+	{
+		current = (Position)malloc(sizeof(Person)); // pointer to newly read person
+		if (!current) {
+			printf("Malloc error!\n");
+			return MALLOC_ERROR;
+		}
+		if (fscanf(filePointer, " %s %s %d ", current->name, current->surname, &current->birthYear) != 3)
+			return SCANF_ERROR;
+
+		// add new person after previous
+		current->next = prev->next;
+		prev->next = current;
+
+		prev = current; // newly read person will be the previous person in next iteration
+	}
+
+	fclose(filePointer);
+
+	return EXIT_SUCCESS;
+}
